@@ -13,7 +13,7 @@ type CommandEnv struct {
 	User *models.User
 }
 
-func RegisterCommands() (map[string]*Command) {
+func RegisterCommands() map[string]*Command {
 	cmds := make(map[string]*Command)
 
 	addCommand(cmds, &Command{

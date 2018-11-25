@@ -4,7 +4,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func Feed(s *discordgo.Session, m *discordgo.MessageCreate, parts []string, globalEnv *GlobalEnv, cmdEnv *CommandEnv) error {
-	s.ChannelMessageSend(m.ChannelID, "Not implemented")
+func Feed(s *discordgo.Session, m *discordgo.MessageCreate, _ []string, _ *GlobalEnv, _ *CommandEnv) error {
+	_, _ = s.ChannelMessageSend(m.ChannelID, "Not implemented")
 	return nil
 }

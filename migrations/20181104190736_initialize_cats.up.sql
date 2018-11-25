@@ -8,7 +8,6 @@ create table if not exists cats
   hunger      int default 100           not null,
   last_fed    timestamp default 'epoch' not null,
   away        boolean default false     not null,
-  return_time timestamp default 'epoch' not null,
 
   --- Cascading deletion to prevent stray cats
   constraint cats_users_id_fk foreign key (owner_id) references users (id) on delete cascade

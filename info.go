@@ -10,7 +10,7 @@ import (
 const ckBaseUrl = "https://storage.googleapis.com/ck-kitty-image/0x06012c8cf97bead5deae237070f9587f8e7a266d"
 
 func Info(s *discordgo.Session, m *discordgo.MessageCreate,
-	parts []string, globalEnv *GlobalEnv, cmdEnv *CommandEnv) (error) {
+	parts []string, globalEnv *GlobalEnv, cmdEnv *CommandEnv) error {
 
 	if len(parts) < 2 {
 		utils.ChannelMesageSendError(s, m.ChannelID, "Please specify a cat to get the info of!")
@@ -46,13 +46,13 @@ func Info(s *discordgo.Session, m *discordgo.MessageCreate,
 				Value: cat.Pronoun,
 			},
 			{
-				Name: "Status",
+				Name:  "Status",
 				Value: catStatus,
 			},
 		},
 	}
 
-	s.ChannelMessageSendEmbed(m.ChannelID, embed)
+	_, _ = s.ChannelMessageSendEmbed(m.ChannelID, embed)
 
 	return nil
 }

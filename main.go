@@ -36,6 +36,7 @@ func main() {
 	rand.Seed(time.Now().Unix())
 
 	discord, err := initDiscord(cfg.BotToken)
+	defer discord.Close()
 
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
@@ -64,8 +65,6 @@ func main() {
 	<-sc
 
 	logrus.Println("Shutting down...")
-
-	discord.Close()
 }
 
 func initDiscord(botToken string) (*discordgo.Session, error) {

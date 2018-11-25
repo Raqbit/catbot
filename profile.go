@@ -7,7 +7,7 @@ import (
 )
 
 func Profile(s *discordgo.Session, m *discordgo.MessageCreate,
-	_ []string, globalEnv *GlobalEnv, cmdEnv *CommandEnv) (error) {
+	_ []string, globalEnv *GlobalEnv, cmdEnv *CommandEnv) error {
 	cats, err := globalEnv.Db.AllCatsOfUser(cmdEnv.User.ID)
 
 	if err != nil {
@@ -58,7 +58,7 @@ func Profile(s *discordgo.Session, m *discordgo.MessageCreate,
 		},
 	}
 
-	s.ChannelMessageSendEmbed(m.ChannelID, embed)
+	_, _ = s.ChannelMessageSendEmbed(m.ChannelID, embed)
 
 	return nil
 }

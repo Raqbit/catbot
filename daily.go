@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func Daily(s *discordgo.Session, m *discordgo.MessageCreate, parts []string, globalEnv *GlobalEnv, cmdEnv *CommandEnv) error {
+func Daily(s *discordgo.Session, m *discordgo.MessageCreate, _ []string, globalEnv *GlobalEnv, cmdEnv *CommandEnv) error {
 	diff := time.Since(cmdEnv.User.LastDaily).Hours()
 
 	if diff < 24 {
@@ -17,7 +17,7 @@ func Daily(s *discordgo.Session, m *discordgo.MessageCreate, parts []string, glo
 			m.ChannelID,
 			fmt.Sprintf("%s, your your daily is still on cooldown! It refreshes in %.0f hours.",
 				m.Author.Mention(),
-				24 - math.Round(diff),
+				24-math.Round(diff),
 			),
 		)
 		return nil
