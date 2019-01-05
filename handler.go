@@ -4,13 +4,11 @@ import (
 	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/sirupsen/logrus"
-	"raqb.it/catbot/models"
-	"raqb.it/catbot/utils"
 	"strings"
 )
 
 type CommandEnv struct {
-	User *models.User
+	User *User
 }
 
 func RegisterCommands() map[string]*Command {
@@ -93,7 +91,7 @@ func HandleMessage(s *discordgo.Session, m *discordgo.MessageCreate, globalEnv *
 	}
 
 	// Check if message comes from DM
-	comesFromDM, err := utils.ComesFromDM(s, m)
+	comesFromDM, err := ComesFromDM(s, m)
 
 	if err != nil {
 		logrus.Error("Could not determine if message was sent in public channel")
@@ -146,7 +144,7 @@ func HandleMessage(s *discordgo.Session, m *discordgo.MessageCreate, globalEnv *
 	err = cmd.Exec(s, m, commandParts, globalEnv, cmdEnv)
 
 	if err != nil {
-		utils.ChannelMesageSendError(s, m.ChannelID,
+		ChannelMesageSendError(s, m.ChannelID,
 			fmt.Sprintf("Something went wrong while executing %s%s",
 				globalEnv.Config.CommandPrefix,
 				label,

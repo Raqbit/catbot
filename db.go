@@ -1,9 +1,8 @@
-package models
+package main
 
 import (
 	"database/sql"
 	"github.com/jmoiron/sqlx"
-	_ "github.com/lib/pq"
 	"time"
 )
 
@@ -16,9 +15,10 @@ type BaseModel struct {
 
 type Datastore interface {
 	// User functions
+	GetUserById(userId uint) (*User, error)
 	GetUserByDiscordId(discordId string) (*User, error)
 	GetUserOrCreate(discordId string) (*User, error)
-	UserRemoveMoney(userId uint, amount int64) error
+	UserModifyMoney(userId uint, amount int64) error
 	UserUseDaily(userId uint, amount int64) (int64, error)
 
 	// Cat functions
@@ -26,6 +26,8 @@ type Datastore interface {
 	GetCatByName(ownerId uint, name string) (*Cat, error)
 	CreateCatForUser(ownerId uint, cryptoKittyId int, name string, pronoun string) error
 	CatNameExists(ownerId uint, name string) (bool, error)
+	MarkCatAwayUntil(catId uint, channelId string, until time.Time) error
+	UpdateReturningCats() ([]*Cat, error)
 }
 
 type DB struct {

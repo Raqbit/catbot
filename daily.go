@@ -5,7 +5,6 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/sirupsen/logrus"
 	"math"
-	"raqb.it/catbot/utils"
 	"time"
 )
 
@@ -13,7 +12,7 @@ func Daily(s *discordgo.Session, m *discordgo.MessageCreate, _ []string, globalE
 	diff := time.Since(cmdEnv.User.LastDaily).Hours()
 
 	if diff < 24 {
-		utils.ChannelMesageSendError(s,
+		ChannelMesageSendError(s,
 			m.ChannelID,
 			fmt.Sprintf("%s, your your daily is still on cooldown! It refreshes in %.0f hours.",
 				m.Author.Mention(),
@@ -26,9 +25,7 @@ func Daily(s *discordgo.Session, m *discordgo.MessageCreate, _ []string, globalE
 	newAmount, err := globalEnv.Db.UserUseDaily(cmdEnv.User.ID, globalEnv.Config.CatCost)
 
 	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-		}).Errorln("Failed updating money of user")
+		logrus.WithError(err).Errorln("Failed updating money of user")
 		return err
 	}
 

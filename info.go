@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/bwmarrin/discordgo"
-	"raqb.it/catbot/utils"
+	"github.com/sirupsen/logrus"
 	"strings"
 )
 
@@ -13,7 +13,7 @@ func Info(s *discordgo.Session, m *discordgo.MessageCreate,
 	parts []string, globalEnv *GlobalEnv, cmdEnv *CommandEnv) error {
 
 	if len(parts) < 2 {
-		utils.ChannelMesageSendError(s, m.ChannelID, "Please specify a cat to get the info of!")
+		ChannelMesageSendError(s, m.ChannelID, "Please specify a cat to get the info of!")
 		return nil
 	}
 
@@ -21,8 +21,13 @@ func Info(s *discordgo.Session, m *discordgo.MessageCreate,
 
 	cat, err := globalEnv.Db.GetCatByName(cmdEnv.User.ID, catName)
 
-	if err != nil && cat == nil {
-		utils.ChannelMesageSendError(s, m.ChannelID, fmt.Sprintf(
+	if err != nil {
+		logrus.WithError(err).Errorln("Could not fetch cat from database")
+		return nil
+	}
+
+	if cat == nil {
+		ChannelMesageSendError(s, m.ChannelID, fmt.Sprintf(
 			"%s, you do not have a cat with that name!",
 			m.Author.Mention(),
 		))

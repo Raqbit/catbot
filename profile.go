@@ -11,9 +11,7 @@ func Profile(s *discordgo.Session, m *discordgo.MessageCreate,
 	cats, err := globalEnv.Db.AllCatsOfUser(cmdEnv.User.ID)
 
 	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-		}).Errorln("Could not get cats from database")
+		logrus.WithError(err).Errorln("Could not get cats from database")
 		return err
 	}
 

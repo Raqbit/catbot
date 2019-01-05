@@ -1,4 +1,4 @@
-package utils
+package main
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 
 const bannedChars = "#<>@*~_`\\/-,!|"
 
-func CheckCatName(name string) (bool) {
+func CheckCatName(name string) bool {
 	if len(name) > 20 {
 		return false
 	}

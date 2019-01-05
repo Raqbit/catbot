@@ -7,29 +7,21 @@ import (
 	"math/rand"
 	"os"
 	"os/signal"
-	"raqb.it/catbot/config"
-	"raqb.it/catbot/models"
 	"syscall"
 	"time"
 )
 
 type GlobalEnv struct {
-	Db       models.Datastore
-	Config   *config.Config
+	Db       Datastore
+	Config   *Config
 	Commands map[string]*Command
 }
 
 func main() {
-	cfg, err := config.NewConfig()
+	cfg, err := LoadConfig()
 
 	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-		}).Fatal("Configuration error.")
-	}
-
-	if cfg.Debug {
-		logrus.SetLevel(logrus.DebugLevel)
+		logrus.WithError(err).Fatal("Configuration error.")
 	}
 
 	// Seed random generator
@@ -39,23 +31,27 @@ func main() {
 	defer discord.Close()
 
 	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-		}).Fatal("Failed to connect to Discord.")
+		logrus.WithError(err).Fatal("Failed to connect to Discord.")
 	}
 
-	db, err := models.NewDb(cfg.DbSrc)
+	db, err := NewDb(cfg.DbSrc)
 
 	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-		}).Fatal("Failed to connect to database.")
+		logrus.WithError(err).Fatal("Failed to connect to database.")
+	}
+
+	if err != nil {
+		logrus.WithError(err).Fatal("Failed to setup cat return cron job.")
 	}
 
 	// Register all commands
 	cmds := RegisterCommands()
 
 	globalEnv := &GlobalEnv{Db: db, Config: cfg, Commands: cmds}
+
+	// Setup cat return cron
+	catReturnTicker := setupCatReturnCron(discord, globalEnv)
+	defer catReturnTicker.Stop()
 
 	discord.AddHandler(messageCreate(globalEnv))
 
