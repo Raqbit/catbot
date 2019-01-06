@@ -13,7 +13,7 @@ func Info(s *discordgo.Session, m *discordgo.MessageCreate,
 	parts []string, globalEnv *GlobalEnv, cmdEnv *CommandEnv) error {
 
 	if len(parts) < 2 {
-		ChannelMesageSendError(s, m.ChannelID, "Please specify a cat to get the info of!")
+		_, _ = ChannelMesageSendError(s, m.ChannelID, "Please specify a cat to get the info of!")
 		return nil
 	}
 
@@ -27,7 +27,7 @@ func Info(s *discordgo.Session, m *discordgo.MessageCreate,
 	}
 
 	if cat == nil {
-		ChannelMesageSendError(s, m.ChannelID, fmt.Sprintf(
+		_, _ = ChannelMesageSendError(s, m.ChannelID, fmt.Sprintf(
 			"%s, you do not have a cat with that name!",
 			m.Author.Mention(),
 		))

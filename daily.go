@@ -12,7 +12,7 @@ func Daily(s *discordgo.Session, m *discordgo.MessageCreate, _ []string, globalE
 	diff := time.Since(cmdEnv.User.LastDaily).Hours()
 
 	if diff < 24 {
-		ChannelMesageSendError(s,
+		_, _ = ChannelMesageSendError(s,
 			m.ChannelID,
 			fmt.Sprintf("%s, your your daily is still on cooldown! It refreshes in %.0f hours.",
 				m.Author.Mention(),
@@ -52,7 +52,7 @@ func Daily(s *discordgo.Session, m *discordgo.MessageCreate, _ []string, globalE
 		},
 	}
 
-	s.ChannelMessageSendEmbed(m.ChannelID, embed)
+	_, _ = s.ChannelMessageSendEmbed(m.ChannelID, embed)
 
 	return nil
 }

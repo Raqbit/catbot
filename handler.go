@@ -144,7 +144,7 @@ func HandleMessage(s *discordgo.Session, m *discordgo.MessageCreate, globalEnv *
 	err = cmd.Exec(s, m, commandParts, globalEnv, cmdEnv)
 
 	if err != nil {
-		ChannelMesageSendError(s, m.ChannelID,
+		_, _ = ChannelMesageSendError(s, m.ChannelID,
 			fmt.Sprintf("Something went wrong while executing %s%s",
 				globalEnv.Config.CommandPrefix,
 				label,
