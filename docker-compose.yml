@@ -2,6 +2,7 @@ version: '3.1'
 
 services:
   db:
+    container_name: catbotdb
     image: postgres:alpine
     restart: always
     ports:
@@ -12,8 +13,5 @@ services:
   bot:
     build: .
     restart: always
-    environment:
-      CATBOT_CAT_COST: 25
-      CATBOT_COMMAND_PREFIX: c!
     env_file:
       - catbot.env
