@@ -11,7 +11,11 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -ldflag
 
 FROM alpine:3.8
 
-RUN apk --no-cache add ca-certificates tini net-tools
+RUN apk add --no-cache --update wget && \
+    apk add --no-cache ca-certificates tini net-tools && \
+    wget https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh && \
+    chmod +x wait-for-it.sh && \
+    apk del wget
 
 COPY --from=builder /go/bin/catbot /catbot
 COPY --from=builder /go/src/github.com/raqbit/catbot/migrations /migrations
