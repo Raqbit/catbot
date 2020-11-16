@@ -4,7 +4,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-type RunFunc func(s *discordgo.Session, m *discordgo.MessageCreate, parts []string, context *Context) error
+type RunFunc func(s *discordgo.Session, m *discordgo.MessageCreate, parts []string, context *CmdContext) error
 
 type Command struct {
 	Name        string

@@ -12,7 +12,15 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func NewDb(dataSourceName string) (models.Querier, error) {
+type database struct {
+	*sqlx.DB
+}
+
+func (d *database) BeginTransaction() (models.Transaction, error) {
+	return d.Beginx()
+}
+
+func NewDb(dataSourceName string) (models.Datastore, error) {
 	db, err := sqlx.Open("postgres", dataSourceName)
 	if err != nil {
 		return nil, err
@@ -28,7 +36,7 @@ func NewDb(dataSourceName string) (models.Querier, error) {
 		return nil, err
 	}
 
-	return db, nil
+	return &database{db}, nil
 }
 
 func migrateDatabase(db *sqlx.DB) error {

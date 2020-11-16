@@ -4,15 +4,12 @@ import (
 	"fmt"
 	"github.com/Raqbit/catbot/models"
 	"github.com/bwmarrin/discordgo"
-	"github.com/sirupsen/logrus"
 	"strings"
 )
 
 const ckBaseUrl = "https://storage.googleapis.com/ck-kitty-image/0x06012c8cf97bead5deae237070f9587f8e7a266d"
 
-func Info(s *discordgo.Session, m *discordgo.MessageCreate,
-	parts []string, context *Context) error {
-
+func Info(s *discordgo.Session, m *discordgo.MessageCreate, parts []string, ctx *CmdContext) error {
 	if len(parts) < 2 {
 		_, _ = ChannelMesageSendError(s, m.ChannelID, "Please specify a cat to get the info of!")
 		return nil
@@ -20,11 +17,10 @@ func Info(s *discordgo.Session, m *discordgo.MessageCreate,
 
 	catName := strings.Join(parts[1:], " ")
 
-	cat, err := models.Cats.GetByName(context.Store, context.User, catName)
+	cat, err := models.Cats.GetByName(ctx.Store, ctx.User, catName)
 
 	if err != nil {
-		logrus.WithError(err).Errorln("Could not fetch cat from database")
-		return nil
+		return fmt.Errorf("could not fetch cat from db: %w", err)
 	}
 
 	if cat == nil {

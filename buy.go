@@ -9,10 +9,12 @@ import (
 	"strings"
 )
 
+// Max Crypto Kitty ID used to generate random ones
+const MaxCryptoKittyID = 1000000
+
 var pronouns = []string{"he", "she", "they"}
 
-func Buy(s *discordgo.Session, m *discordgo.MessageCreate, parts []string, context *Context) error {
-
+func Buy(s *discordgo.Session, m *discordgo.MessageCreate, parts []string, ctx *CmdContext) error {
 	if len(parts) < 2 {
 		_, _ = ChannelMesageSendError(s, m.ChannelID, "Please specify a name for your new cat!")
 		return nil
@@ -20,14 +22,12 @@ func Buy(s *discordgo.Session, m *discordgo.MessageCreate, parts []string, conte
 
 	catName := strings.Join(parts[1:], " ")
 
-	isValidName := CheckCatName(catName)
-
-	if !isValidName {
+	if !isValidCatName(catName) {
 		_, _ = ChannelMesageSendError(s, m.ChannelID, "The name specified is not valid.")
 		return nil
 	}
 
-	exists, err := models.Cats.CatNameExists(context.Store, context.User, catName)
+	exists, err := models.Cats.CatNameExists(ctx.Store, ctx.User, catName)
 
 	if err != nil {
 		logrus.WithError(err).Errorln("Could not verify if cat name already exists")
@@ -43,11 +43,11 @@ func Buy(s *discordgo.Session, m *discordgo.MessageCreate, parts []string, conte
 		return nil
 	}
 
-	if context.User.Money < context.Config.CatCost {
+	if ctx.User.Money < ctx.Bot.Config.CatCost {
 		_, _ = ChannelMesageSendError(s, m.ChannelID, fmt.Sprintf(
 			"%s, you don't have enough credits for a cat! You can get more by using **%sdaily** every day.",
 			m.Author.Mention(),
-			context.Config.CommandPrefix,
+			ctx.Bot.Config.CommandPrefix,
 		))
 		return nil
 	}
@@ -55,17 +55,12 @@ func Buy(s *discordgo.Session, m *discordgo.MessageCreate, parts []string, conte
 	randomPronoun := getRandomPronoun()
 	cryptoKitty := getRandomCryptoKittyId()
 
-	// TODO: USE TRANSACTION
-	err = models.Cats.CreateForUser(context.Store, context.User, cryptoKitty, catName, randomPronoun)
-
-	if err != nil {
+	if err = models.Cats.CreateForUser(ctx.Store, ctx.User, cryptoKitty, catName, randomPronoun); err != nil {
 		logrus.WithError(err).Errorln("Could not create cat")
 		return err
 	}
 
-	err = context.User.ModifyMoney(context.Store, -context.Config.CatCost)
-
-	if err != nil {
+	if err = ctx.User.ModifyMoney(ctx.Store, -ctx.Bot.Config.CatCost); err != nil {
 		logrus.WithError(err).Errorln("Could not remove money from user")
 		return err
 	}
@@ -91,6 +86,5 @@ func getRandomPronoun() string {
 }
 
 func getRandomCryptoKittyId() int {
-	// Using 1000000 as max id here
-	return rand.Intn(1000000)
+	return rand.Intn(MaxCryptoKittyID)
 }

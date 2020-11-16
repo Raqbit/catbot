@@ -8,28 +8,31 @@ import (
 	"time"
 )
 
-func setupCatReturnCron(session *discordgo.Session, appContext *AppContext) *time.Ticker {
+func setupCatReturnCron(session *discordgo.Session, botContext *BotContext) *time.Ticker {
 	ticker := time.NewTicker(10 * time.Second)
 
 	go func() {
 		for range ticker.C {
-			checkCatReturns(session, appContext)
+			err := checkCatReturns(session, botContext)
+
+			if err != nil {
+				logrus.WithError(err).Error("Could not check cat returns")
+			}
 		}
 	}()
 
 	return ticker
 }
 
-func checkCatReturns(s *discordgo.Session, appContext *AppContext) {
-	cats, err := models.Cats.UpdateReturning(appContext.Store)
+func checkCatReturns(s *discordgo.Session, botContext *BotContext) error {
+	cats, err := models.Cats.UpdateReturning(botContext.Datastore)
 
 	if err != nil {
-		logrus.WithError(err).Error("Could not retrieve returning cats")
-		return
+		return fmt.Errorf("could not retrieve returning cats: %w", err)
 	}
 
 	for _, cat := range cats {
-		user, err := models.Users.GetById(appContext.Store, cat.OwnerId)
+		user, err := models.Users.GetById(botContext.Datastore, cat.OwnerId)
 
 		if err != nil {
 			logrus.WithError(err).Error("Could not retrieve cat owner")
@@ -50,4 +53,6 @@ func checkCatReturns(s *discordgo.Session, appContext *AppContext) {
 				cat.Name,
 			))
 	}
+
+	return nil
 }

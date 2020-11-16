@@ -8,9 +8,10 @@ import (
 	"strings"
 )
 
-type Context struct {
-	*AppContext
-	User *models.User
+type CmdContext struct {
+	Bot   *BotContext
+	User  *models.User
+	Store models.Queryable
 }
 
 func RegisterCommands() map[string]*Command {
@@ -26,7 +27,7 @@ func RegisterCommands() map[string]*Command {
 
 	addCommand(cmds, &Command{
 		Name:        "Out",
-		Description: "Let out a cat",
+		Description: "Let out a cat out on an adventure",
 		Aliases:     []string{"out"},
 		Admin:       false,
 		Exec:        Out,
@@ -86,28 +87,27 @@ func addCommand(cmds map[string]*Command, command *Command) {
 	}
 }
 
-func HandleMessage(s *discordgo.Session, m *discordgo.MessageCreate, appContext *AppContext) {
+func handleMessage(s *discordgo.Session, m *discordgo.MessageCreate, appContext *BotContext) error {
+	// Do not respond to bots
+	if m.Author.Bot {
+		return nil
+	}
+
 	// Do not respond to messages of myself
 	if m.Author.ID == s.State.User.ID {
-		return
+		return nil
 	}
 
 	// Check if message comes from DM
-	comesFromDM, err := ComesFromDM(s, m)
+	fromDM, err := comesFromDM(s, m)
 
 	if err != nil {
-		logrus.Error("Could not determine if message was sent in public channel")
-		return
+		return fmt.Errorf("could not determine if msg was sent in public channel: %w", err)
 	}
 
 	// Do not respond to dms
-	if comesFromDM {
-		return
-	}
-
-	// Do not respond to bots
-	if m.Author.Bot {
-		return
+	if fromDM {
+		return nil
 	}
 
 	// Split by space
@@ -115,7 +115,7 @@ func HandleMessage(s *discordgo.Session, m *discordgo.MessageCreate, appContext 
 
 	// Only respond if message has correct prefix
 	if !strings.HasPrefix(commandParts[0], appContext.Config.CommandPrefix) {
-		return
+		return nil
 	}
 
 	// Get commands label by trimming prefix
@@ -123,27 +123,39 @@ func HandleMessage(s *discordgo.Session, m *discordgo.MessageCreate, appContext 
 
 	// Empty string label
 	if len(label) == 0 {
-		return
+		return nil
 	}
 
 	cmd, commandFound := appContext.Commands[label]
 
 	// Only respond if commands is known
 	if !commandFound {
-		return
+		return nil
 	}
 
-	user, err := models.Users.GetOrCreate(appContext.Store, m.Author.ID)
+	user, err := models.Users.GetOrCreate(appContext.Datastore, m.Author.ID)
 
 	if err != nil {
-		logrus.Error("Could not fetch or create user!")
-		return
+		return fmt.Errorf("could not get or create user: %w", err)
 	}
 
-	context := &Context{AppContext: appContext, User: user}
+	tx, err := appContext.Datastore.BeginTransaction()
+
+	if err != nil {
+		return fmt.Errorf("could not create transaction: %w", err)
+	}
+
+	ctx := &CmdContext{Bot: appContext, User: user, Store: tx}
 
 	// Execute commands
-	err = cmd.Exec(s, m, commandParts, context)
+	err = cmd.Exec(s, m, commandParts, ctx)
+
+	if err != nil {
+		// Rollback changes when an error ocurred during execution of the command, but do not override err with nil
+		_ = tx.Rollback()
+	} else {
+		err = tx.Commit()
+	}
 
 	if err != nil {
 		_, _ = ChannelMesageSendError(s, m.ChannelID,
@@ -152,6 +164,7 @@ func HandleMessage(s *discordgo.Session, m *discordgo.MessageCreate, appContext 
 				label,
 			),
 		)
-		return
 	}
+
+	return err
 }

@@ -3,13 +3,12 @@ package main
 import (
 	"fmt"
 	"github.com/bwmarrin/discordgo"
-	"github.com/sirupsen/logrus"
 	"math"
 	"time"
 )
 
-func Daily(s *discordgo.Session, m *discordgo.MessageCreate, _ []string, context *Context) error {
-	diff := time.Since(context.User.LastDaily).Hours()
+func Daily(s *discordgo.Session, m *discordgo.MessageCreate, _ []string, ctx *CmdContext) error {
+	diff := time.Since(ctx.User.LastDaily).Hours()
 
 	if diff < 24 {
 		_, _ = ChannelMesageSendError(s,
@@ -23,11 +22,10 @@ func Daily(s *discordgo.Session, m *discordgo.MessageCreate, _ []string, context
 	}
 
 	// TODO: Add randomness?
-	newAmount, err := context.User.UseDaily(context.Store, context.Config.CatCost)
+	newAmount, err := ctx.User.UseDaily(ctx.Store, ctx.Bot.Config.CatCost)
 
 	if err != nil {
-		logrus.WithError(err).Errorln("Failed updating money of user")
-		return err
+		return fmt.Errorf("failed using user's daily: %w", err)
 	}
 
 	dailyTitle := fmt.Sprintf(
@@ -36,12 +34,12 @@ func Daily(s *discordgo.Session, m *discordgo.MessageCreate, _ []string, context
 
 	dailyDesc := fmt.Sprintf(
 		"**+%d credits** (you now have %d)",
-		context.Config.CatCost,
+		ctx.Bot.Config.CatCost,
 		newAmount,
 	)
 
 	dailyFooter := fmt.Sprintf("Use %sbuy to buy a cat.",
-		context.Config.CommandPrefix,
+		ctx.Bot.Config.CommandPrefix,
 	)
 
 	embed := &discordgo.MessageEmbed{

@@ -9,7 +9,7 @@ import (
 
 const bannedChars = "#<>@*~_`\\/-,!|"
 
-func CheckCatName(name string) bool {
+func isValidCatName(name string) bool {
 	if len(name) > 20 {
 		return false
 	}
@@ -45,7 +45,7 @@ func createCatProfileEmbed(cat *models.Cat) *discordgo.MessageEmbed {
 	}
 }
 
-func ComesFromDM(s *discordgo.Session, m *discordgo.MessageCreate) (bool, error) {
+func comesFromDM(s *discordgo.Session, m *discordgo.MessageCreate) (bool, error) {
 	channel, err := s.State.Channel(m.ChannelID)
 	if err != nil {
 		if channel, err = s.Channel(m.ChannelID); err != nil {

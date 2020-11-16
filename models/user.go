@@ -12,7 +12,7 @@ type User struct {
 	LastDaily time.Time `db:"last_daily"`
 }
 
-func (u *User) UseDaily(db Querier, amount int64) (int64, error) {
+func (u *User) UseDaily(db Queryable, amount int64) (int64, error) {
 	rows, err := db.NamedQuery(
 		`update users set 
 			money = money + :amount,
@@ -42,7 +42,7 @@ func (u *User) UseDaily(db Querier, amount int64) (int64, error) {
 	return newMoneyVal, nil
 }
 
-func (u *User) ModifyMoney(db Querier, amount int64) error {
+func (u *User) ModifyMoney(db Queryable, amount int64) error {
 	_, err := db.NamedExec(
 		`update users set 
 			money = money + :amount
@@ -58,7 +58,7 @@ func (u *User) ModifyMoney(db Querier, amount int64) error {
 
 type UserStore struct{}
 
-func (us *UserStore) GetById(db Querier, userId uint) (*User, error) {
+func (us *UserStore) GetById(db Queryable, userId uint) (*User, error) {
 	var user User
 
 	err := db.Get(&user, `select * from users where id=$1 limit 1`, userId)
@@ -70,7 +70,7 @@ func (us *UserStore) GetById(db Querier, userId uint) (*User, error) {
 	return &user, nil
 }
 
-func (us *UserStore) GetByDiscordId(db Querier, discordId string) (*User, error) {
+func (us *UserStore) GetByDiscordId(db Queryable, discordId string) (*User, error) {
 	var user User
 
 	err := db.Get(&user, `select * from users where discord_id=$1 limit 1`, discordId)
@@ -82,28 +82,20 @@ func (us *UserStore) GetByDiscordId(db Querier, discordId string) (*User, error)
 	return &user, nil
 }
 
-func (us *UserStore) GetOrCreate(db Querier, discordId string) (*User, error) {
+func (us *UserStore) GetOrCreate(db Queryable, discordId string) (*User, error) {
 	user, err := us.GetByDiscordId(db, discordId)
 
 	if err == nil && user != nil {
 		return user, err
 	}
 
-	_, err = db.NamedExec(`insert into users (discord_id) values (:discord_id)`,
+	if _, err = db.NamedExec(`insert into users (discord_id) values (:discord_id)`,
 		map[string]interface{}{
 			"discord_id": discordId,
 		},
-	)
-
-	if err != nil {
+	); err != nil {
 		return nil, err
 	}
 
-	user, err = us.GetByDiscordId(db, discordId)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return user, nil
+	return us.GetByDiscordId(db, discordId)
 }

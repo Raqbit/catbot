@@ -4,14 +4,12 @@ import (
 	"fmt"
 	"github.com/Raqbit/catbot/models"
 	"github.com/bwmarrin/discordgo"
-	"github.com/sirupsen/logrus"
 	"math/rand"
 	"strings"
 	"time"
 )
 
-func Out(s *discordgo.Session, m *discordgo.MessageCreate, parts []string, context *Context) error {
-
+func Out(s *discordgo.Session, m *discordgo.MessageCreate, parts []string, ctx *CmdContext) error {
 	if len(parts) < 2 {
 		_, _ = ChannelMesageSendError(s, m.ChannelID, "Please specify a cat to get the info of!")
 		return nil
@@ -19,11 +17,10 @@ func Out(s *discordgo.Session, m *discordgo.MessageCreate, parts []string, conte
 
 	catName := strings.Join(parts[1:], " ")
 
-	cat, err := models.Cats.GetByName(context.Store, context.User, catName)
+	cat, err := models.Cats.GetByName(ctx.Store, ctx.User, catName)
 
 	if err != nil {
-		logrus.WithError(err).Errorln("Could not fetch cat from database")
-		return err
+		return fmt.Errorf("could not fetch cat from db: %w", err)
 	}
 
 	if cat == nil {
@@ -43,13 +40,12 @@ func Out(s *discordgo.Session, m *discordgo.MessageCreate, parts []string, conte
 		return nil
 	}
 
-	randUntil := getRandomAwayUntil(context.Config.CatMinAwayMins, context.Config.CatMaxAwayMins)
+	randUntil := getRandomAwayUntil(ctx.Bot.Config.CatMinAwayMins, ctx.Bot.Config.CatMaxAwayMins)
 
-	err = cat.MarkAwayUntil(context.Store, m.ChannelID, randUntil)
+	err = cat.MarkAwayUntil(ctx.Store, m.ChannelID, randUntil)
 
 	if err != nil {
-		logrus.WithError(err).Errorln("Could not mark cat as away")
-		return err
+		return fmt.Errorf("could not mark cat as away: %w", err)
 	}
 
 	_, _ = ChannelMessageSendEmote(s, m.ChannelID, "💨", fmt.Sprintf(

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/Raqbit/catbot/models"
 	"github.com/bwmarrin/discordgo"
 	_ "github.com/lib/pq"
@@ -12,10 +13,10 @@ import (
 	"time"
 )
 
-type AppContext struct {
-	Store    models.Querier
-	Config   *Config
-	Commands map[string]*Command
+type BotContext struct {
+	Datastore models.Datastore
+	Config    *Config
+	Commands  map[string]*Command
 }
 
 func main() {
@@ -29,11 +30,12 @@ func main() {
 	rand.Seed(time.Now().Unix())
 
 	discord, err := initDiscord(cfg.BotToken)
-	defer discord.Close()
 
 	if err != nil {
-		logrus.WithError(err).Fatal("Failed to connect to Discord.")
+		logrus.WithError(err).Fatal("Could not initalize Discord.")
 	}
+
+	defer discord.Close()
 
 	db, err := NewDb(cfg.DbSrc)
 
@@ -44,13 +46,13 @@ func main() {
 	// Register all commands
 	cmds := RegisterCommands()
 
-	appContext := &AppContext{Store: db, Config: cfg, Commands: cmds}
+	botCtx := &BotContext{Config: cfg, Commands: cmds, Datastore: db}
 
 	// Setup cat return cron
-	catReturnTicker := setupCatReturnCron(discord, appContext)
+	catReturnTicker := setupCatReturnCron(discord, botCtx)
 	defer catReturnTicker.Stop()
 
-	discord.AddHandler(messageCreate(appContext))
+	discord.AddHandler(messageCreate(botCtx))
 
 	logrus.Println("Bot is now running.  Press CTRL-C to exit.")
 	sc := make(chan os.Signal, 1)
@@ -61,7 +63,7 @@ func main() {
 }
 
 func initDiscord(botToken string) (*discordgo.Session, error) {
-	discord, err := discordgo.New("Bot " + botToken)
+	discord, err := discordgo.New(fmt.Sprintf("Bot %s", botToken))
 
 	if err != nil {
 		return nil, err
@@ -76,8 +78,12 @@ func initDiscord(botToken string) (*discordgo.Session, error) {
 	return discord, nil
 }
 
-func messageCreate(appContext *AppContext) func(s *discordgo.Session, m *discordgo.MessageCreate) {
+func messageCreate(appContext *BotContext) func(s *discordgo.Session, m *discordgo.MessageCreate) {
 	return func(s *discordgo.Session, m *discordgo.MessageCreate) {
-		HandleMessage(s, m, appContext)
+		err := handleMessage(s, m, appContext)
+
+		if err != nil {
+			logrus.WithError(err).Error("Error while handling message")
+		}
 	}
 }

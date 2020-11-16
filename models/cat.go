@@ -17,7 +17,7 @@ type Cat struct {
 	AwayChannel   string    `db:"away_channel"`
 }
 
-func (c *Cat) MarkAwayUntil(db Querier, channelId string, until time.Time) error {
+func (c *Cat) MarkAwayUntil(db Queryable, channelId string, until time.Time) error {
 	_, err := db.NamedExec(
 		`update cats set 
 			away = true,
@@ -36,7 +36,7 @@ func (c *Cat) MarkAwayUntil(db Querier, channelId string, until time.Time) error
 
 type CatStore struct{}
 
-func (cs *CatStore) GetAllCatsOfUser(db Querier, owner *User) ([]*Cat, error) {
+func (cs *CatStore) GetAllCatsOfUser(db Queryable, owner *User) ([]*Cat, error) {
 	var cats []*Cat
 
 	err := db.Select(
@@ -52,7 +52,7 @@ func (cs *CatStore) GetAllCatsOfUser(db Querier, owner *User) ([]*Cat, error) {
 	return cats, nil
 }
 
-func (cs *CatStore) GetByName(db Querier, owner *User, name string) (*Cat, error) {
+func (cs *CatStore) GetByName(db Queryable, owner *User, name string) (*Cat, error) {
 	var cat Cat
 
 	err := db.Get(
@@ -69,7 +69,7 @@ func (cs *CatStore) GetByName(db Querier, owner *User, name string) (*Cat, error
 	return &cat, nil
 }
 
-func (cs *CatStore) CreateForUser(db Querier, owner *User, cryptoKittyId int, name string, pronoun string) error {
+func (cs *CatStore) CreateForUser(db Queryable, owner *User, cryptoKittyId int, name string, pronoun string) error {
 	_, err := db.NamedExec(
 		`insert into cats (owner_id, ck_id, name, pronoun)
 			   values (:owner_id, :ck_id, :name, :pronoun)`,
@@ -87,7 +87,7 @@ func (cs *CatStore) CreateForUser(db Querier, owner *User, cryptoKittyId int, na
 	return nil
 }
 
-func (cs *CatStore) CatNameExists(db Querier, owner *User, name string) (bool, error) {
+func (cs *CatStore) CatNameExists(db Queryable, owner *User, name string) (bool, error) {
 	var exists bool
 
 	err := db.Get(
@@ -104,7 +104,7 @@ func (cs *CatStore) CatNameExists(db Querier, owner *User, name string) (bool, e
 	return exists, nil
 }
 
-func (cs *CatStore) UpdateReturning(db Querier) ([]*Cat, error) {
+func (cs *CatStore) UpdateReturning(db Queryable) ([]*Cat, error) {
 	var cats []*Cat
 
 	err := db.Select(

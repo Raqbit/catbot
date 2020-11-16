@@ -6,11 +6,22 @@ import (
 	"time"
 )
 
-type Querier interface {
+type Queryable interface {
 	Select(dest interface{}, query string, args ...interface{}) error
 	NamedQuery(query string, arg interface{}) (*sqlx.Rows, error)
 	NamedExec(query string, arg interface{}) (sql.Result, error)
 	Get(dest interface{}, query string, args ...interface{}) error
+}
+
+type Transaction interface {
+	Queryable
+	Commit() error
+	Rollback() error
+}
+
+type Datastore interface {
+	Queryable
+	BeginTransaction() (Transaction, error)
 }
 
 type BaseModel struct {
