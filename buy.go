@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/Raqbit/catbot/models"
 	"github.com/bwmarrin/discordgo"
 	"github.com/sirupsen/logrus"
 	"math/rand"
@@ -10,7 +11,7 @@ import (
 
 var pronouns = []string{"he", "she", "they"}
 
-func Buy(s *discordgo.Session, m *discordgo.MessageCreate, parts []string, globalEnv *GlobalEnv, cmdEnv *CommandEnv) error {
+func Buy(s *discordgo.Session, m *discordgo.MessageCreate, parts []string, context *Context) error {
 
 	if len(parts) < 2 {
 		_, _ = ChannelMesageSendError(s, m.ChannelID, "Please specify a name for your new cat!")
@@ -26,7 +27,7 @@ func Buy(s *discordgo.Session, m *discordgo.MessageCreate, parts []string, globa
 		return nil
 	}
 
-	exists, err := globalEnv.Db.CatNameExists(cmdEnv.User.ID, catName)
+	exists, err := models.Cats.CatNameExists(context.Store, context.User, catName)
 
 	if err != nil {
 		logrus.WithError(err).Errorln("Could not verify if cat name already exists")
@@ -42,38 +43,45 @@ func Buy(s *discordgo.Session, m *discordgo.MessageCreate, parts []string, globa
 		return nil
 	}
 
-	if cmdEnv.User.Money < globalEnv.Config.CatCost {
+	if context.User.Money < context.Config.CatCost {
 		_, _ = ChannelMesageSendError(s, m.ChannelID, fmt.Sprintf(
 			"%s, you don't have enough credits for a cat! You can get more by using **%sdaily** every day.",
 			m.Author.Mention(),
-			globalEnv.Config.CommandPrefix,
+			context.Config.CommandPrefix,
 		))
 		return nil
 	}
 
 	randomPronoun := getRandomPronoun()
+	cryptoKitty := getRandomCryptoKittyId()
 
 	// TODO: USE TRANSACTION
-	err = globalEnv.Db.CreateCatForUser(cmdEnv.User.ID, getRandomCryptoKittyId(), catName, randomPronoun)
+	err = models.Cats.CreateForUser(context.Store, context.User, cryptoKitty, catName, randomPronoun)
 
 	if err != nil {
 		logrus.WithError(err).Errorln("Could not create cat")
 		return err
 	}
 
-	err = globalEnv.Db.UserModifyMoney(cmdEnv.User.ID, -globalEnv.Config.CatCost)
+	err = context.User.ModifyMoney(context.Store, -context.Config.CatCost)
 
 	if err != nil {
 		logrus.WithError(err).Errorln("Could not remove money from user")
 		return err
 	}
 
-	_, _ = ChannelMessageSendEmote(s, m.ChannelID, "🐱",
-		fmt.Sprintf(
+	_, _ = s.ChannelMessageSendComplex(m.ChannelID, &discordgo.MessageSend{
+		Content: formatEmojiMessage("🐱", fmt.Sprintf(
 			"%s, you've just purchased a new cat!",
 			m.Author.Mention(),
-		),
-	)
+		)),
+		Embed: createCatProfileEmbed(&models.Cat{
+			Name:          catName,
+			CryptoKittyID: cryptoKitty,
+			Pronoun:       randomPronoun,
+			Hunger:        100,
+		}),
+	})
 
 	return nil
 }

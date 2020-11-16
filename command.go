@@ -4,7 +4,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-type RunFunc func(s *discordgo.Session, m *discordgo.MessageCreate, parts []string, globalEnv *GlobalEnv, cmdEnv *CommandEnv) error
+type RunFunc func(s *discordgo.Session, m *discordgo.MessageCreate, parts []string, context *Context) error
 
 type Command struct {
 	Name        string

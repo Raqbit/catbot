@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/Raqbit/catbot/models"
 	"github.com/bwmarrin/discordgo"
 	"github.com/sirupsen/logrus"
 	"math/rand"
@@ -9,7 +10,7 @@ import (
 	"time"
 )
 
-func Out(s *discordgo.Session, m *discordgo.MessageCreate, parts []string, globalEnv *GlobalEnv, cmdEnv *CommandEnv) error {
+func Out(s *discordgo.Session, m *discordgo.MessageCreate, parts []string, context *Context) error {
 
 	if len(parts) < 2 {
 		_, _ = ChannelMesageSendError(s, m.ChannelID, "Please specify a cat to get the info of!")
@@ -18,7 +19,7 @@ func Out(s *discordgo.Session, m *discordgo.MessageCreate, parts []string, globa
 
 	catName := strings.Join(parts[1:], " ")
 
-	cat, err := globalEnv.Db.GetCatByName(cmdEnv.User.ID, catName)
+	cat, err := models.Cats.GetByName(context.Store, context.User, catName)
 
 	if err != nil {
 		logrus.WithError(err).Errorln("Could not fetch cat from database")
@@ -42,9 +43,9 @@ func Out(s *discordgo.Session, m *discordgo.MessageCreate, parts []string, globa
 		return nil
 	}
 
-	randUntil := getRandomAwayUntil(globalEnv.Config.CatMinAwayMins, globalEnv.Config.CatMaxAwayMins)
+	randUntil := getRandomAwayUntil(context.Config.CatMinAwayMins, context.Config.CatMaxAwayMins)
 
-	err = globalEnv.Db.MarkCatAwayUntil(cat.ID, m.ChannelID, randUntil)
+	err = cat.MarkAwayUntil(context.Store, m.ChannelID, randUntil)
 
 	if err != nil {
 		logrus.WithError(err).Errorln("Could not mark cat as away")

@@ -2,13 +2,15 @@ package main
 
 import (
 	"fmt"
+	"github.com/Raqbit/catbot/models"
 	"github.com/bwmarrin/discordgo"
 	"github.com/sirupsen/logrus"
 	"strings"
 )
 
-type CommandEnv struct {
-	User *User
+type Context struct {
+	*AppContext
+	User *models.User
 }
 
 func RegisterCommands() map[string]*Command {
@@ -84,7 +86,7 @@ func addCommand(cmds map[string]*Command, command *Command) {
 	}
 }
 
-func HandleMessage(s *discordgo.Session, m *discordgo.MessageCreate, globalEnv *GlobalEnv) {
+func HandleMessage(s *discordgo.Session, m *discordgo.MessageCreate, appContext *AppContext) {
 	// Do not respond to messages of myself
 	if m.Author.ID == s.State.User.ID {
 		return
@@ -112,41 +114,41 @@ func HandleMessage(s *discordgo.Session, m *discordgo.MessageCreate, globalEnv *
 	commandParts := strings.Split(m.Content, " ") // c!foo bar baz
 
 	// Only respond if message has correct prefix
-	if !strings.HasPrefix(commandParts[0], globalEnv.Config.CommandPrefix) {
+	if !strings.HasPrefix(commandParts[0], appContext.Config.CommandPrefix) {
 		return
 	}
 
 	// Get commands label by trimming prefix
-	label := commandParts[0][len(globalEnv.Config.CommandPrefix):]
+	label := commandParts[0][len(appContext.Config.CommandPrefix):]
 
 	// Empty string label
 	if len(label) == 0 {
 		return
 	}
 
-	cmd, commandFound := globalEnv.Commands[label]
+	cmd, commandFound := appContext.Commands[label]
 
 	// Only respond if commands is known
 	if !commandFound {
 		return
 	}
 
-	user, err := globalEnv.Db.GetUserOrCreate(m.Author.ID)
+	user, err := models.Users.GetOrCreate(appContext.Store, m.Author.ID)
 
 	if err != nil {
 		logrus.Error("Could not fetch or create user!")
 		return
 	}
 
-	cmdEnv := &CommandEnv{User: user}
+	context := &Context{AppContext: appContext, User: user}
 
 	// Execute commands
-	err = cmd.Exec(s, m, commandParts, globalEnv, cmdEnv)
+	err = cmd.Exec(s, m, commandParts, context)
 
 	if err != nil {
 		_, _ = ChannelMesageSendError(s, m.ChannelID,
 			fmt.Sprintf("Something went wrong while executing %s%s",
-				globalEnv.Config.CommandPrefix,
+				appContext.Config.CommandPrefix,
 				label,
 			),
 		)

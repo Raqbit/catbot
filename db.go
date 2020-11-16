@@ -1,8 +1,8 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
+	"github.com/Raqbit/catbot/models"
 	"github.com/golang-migrate/migrate"
 	"github.com/golang-migrate/migrate/database/postgres"
 	_ "github.com/golang-migrate/migrate/source/file"
@@ -10,42 +10,9 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"time"
 )
 
-type BaseModel struct {
-	ID        uint       `db:"id"`
-	CreatedAt time.Time  `db:"created_at"`
-	UpdatedAt time.Time  `db:"updated_at"`
-	DeletedAt *time.Time `db:"deleted_at"`
-}
-
-type Datastore interface {
-	// User functions
-	GetUserById(userId uint) (*User, error)
-	GetUserByDiscordId(discordId string) (*User, error)
-	GetUserOrCreate(discordId string) (*User, error)
-	UserModifyMoney(userId uint, amount int64) error
-	UserUseDaily(userId uint, amount int64) (int64, error)
-
-	// Cat functions
-	AllCatsOfUser(ownerId uint) ([]*Cat, error)
-	GetCatByName(ownerId uint, name string) (*Cat, error)
-	CreateCatForUser(ownerId uint, cryptoKittyId int, name string, pronoun string) error
-	CatNameExists(ownerId uint, name string) (bool, error)
-	MarkCatAwayUntil(catId uint, channelId string, until time.Time) error
-	UpdateReturningCats() ([]*Cat, error)
-}
-
-type DB struct {
-	*sqlx.DB
-}
-
-type Tx struct {
-	*sql.Tx
-}
-
-func NewDb(dataSourceName string) (*DB, error) {
+func NewDb(dataSourceName string) (models.Querier, error) {
 	db, err := sqlx.Open("postgres", dataSourceName)
 	if err != nil {
 		return nil, err
@@ -61,7 +28,7 @@ func NewDb(dataSourceName string) (*DB, error) {
 		return nil, err
 	}
 
-	return &DB{db}, nil
+	return db, nil
 }
 
 func migrateDatabase(db *sqlx.DB) error {
@@ -133,12 +100,4 @@ func getDatabaseVersion(m *migrate.Migrate) (string, bool, error) {
 	}
 
 	return version, dirty, nil
-}
-
-func (db *DB) BeginTransaction() (*Tx, error) {
-	tx, err := db.DB.Begin()
-	if err != nil {
-		return nil, err
-	}
-	return &Tx{tx}, nil
 }

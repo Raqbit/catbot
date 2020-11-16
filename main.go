@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/Raqbit/catbot/models"
 	"github.com/bwmarrin/discordgo"
 	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
@@ -11,8 +12,8 @@ import (
 	"time"
 )
 
-type GlobalEnv struct {
-	Db       Datastore
+type AppContext struct {
+	Store    models.Querier
 	Config   *Config
 	Commands map[string]*Command
 }
@@ -40,20 +41,16 @@ func main() {
 		logrus.WithError(err).Fatal("Failed to connect to database.")
 	}
 
-	if err != nil {
-		logrus.WithError(err).Fatal("Failed to setup cat return cron job.")
-	}
-
 	// Register all commands
 	cmds := RegisterCommands()
 
-	globalEnv := &GlobalEnv{Db: db, Config: cfg, Commands: cmds}
+	appContext := &AppContext{Store: db, Config: cfg, Commands: cmds}
 
 	// Setup cat return cron
-	catReturnTicker := setupCatReturnCron(discord, globalEnv)
+	catReturnTicker := setupCatReturnCron(discord, appContext)
 	defer catReturnTicker.Stop()
 
-	discord.AddHandler(messageCreate(globalEnv))
+	discord.AddHandler(messageCreate(appContext))
 
 	logrus.Println("Bot is now running.  Press CTRL-C to exit.")
 	sc := make(chan os.Signal, 1)
@@ -79,8 +76,8 @@ func initDiscord(botToken string) (*discordgo.Session, error) {
 	return discord, nil
 }
 
-func messageCreate(globalEnv *GlobalEnv) func(s *discordgo.Session, m *discordgo.MessageCreate) {
+func messageCreate(appContext *AppContext) func(s *discordgo.Session, m *discordgo.MessageCreate) {
 	return func(s *discordgo.Session, m *discordgo.MessageCreate) {
-		HandleMessage(s, m, globalEnv)
+		HandleMessage(s, m, appContext)
 	}
 }

@@ -8,8 +8,8 @@ import (
 	"time"
 )
 
-func Daily(s *discordgo.Session, m *discordgo.MessageCreate, _ []string, globalEnv *GlobalEnv, cmdEnv *CommandEnv) error {
-	diff := time.Since(cmdEnv.User.LastDaily).Hours()
+func Daily(s *discordgo.Session, m *discordgo.MessageCreate, _ []string, context *Context) error {
+	diff := time.Since(context.User.LastDaily).Hours()
 
 	if diff < 24 {
 		_, _ = ChannelMesageSendError(s,
@@ -22,7 +22,8 @@ func Daily(s *discordgo.Session, m *discordgo.MessageCreate, _ []string, globalE
 		return nil
 	}
 
-	newAmount, err := globalEnv.Db.UserUseDaily(cmdEnv.User.ID, globalEnv.Config.CatCost)
+	// TODO: Add randomness?
+	newAmount, err := context.User.UseDaily(context.Store, context.Config.CatCost)
 
 	if err != nil {
 		logrus.WithError(err).Errorln("Failed updating money of user")
@@ -35,12 +36,12 @@ func Daily(s *discordgo.Session, m *discordgo.MessageCreate, _ []string, globalE
 
 	dailyDesc := fmt.Sprintf(
 		"**+%d credits** (you now have %d)",
-		globalEnv.Config.CatCost,
+		context.Config.CatCost,
 		newAmount,
 	)
 
 	dailyFooter := fmt.Sprintf("Use %sbuy to buy a cat.",
-		globalEnv.Config.CommandPrefix,
+		context.Config.CommandPrefix,
 	)
 
 	embed := &discordgo.MessageEmbed{
