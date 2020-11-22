@@ -12,8 +12,6 @@ import (
 // Max Crypto Kitty ID used to generate random ones
 const MaxCryptoKittyID = 1000000
 
-var pronouns = []string{"he", "she", "they"}
-
 func Buy(s *discordgo.Session, m *discordgo.MessageCreate, parts []string, ctx *CmdContext) error {
 	if len(parts) < 2 {
 		_, _ = ChannelMesageSendError(s, m.ChannelID, "Please specify a name for your new cat!")
@@ -52,10 +50,9 @@ func Buy(s *discordgo.Session, m *discordgo.MessageCreate, parts []string, ctx *
 		return nil
 	}
 
-	randomPronoun := getRandomPronoun()
 	cryptoKitty := getRandomCryptoKittyId()
 
-	if err = models.Cats.CreateForUser(ctx.Store, ctx.User, cryptoKitty, catName, randomPronoun); err != nil {
+	if err = models.Cats.CreateForUser(ctx.Store, ctx.User, cryptoKitty, catName); err != nil {
 		logrus.WithError(err).Errorln("Could not create cat")
 		return err
 	}
@@ -73,16 +70,11 @@ func Buy(s *discordgo.Session, m *discordgo.MessageCreate, parts []string, ctx *
 		Embed: createCatProfileEmbed(&models.Cat{
 			Name:          catName,
 			CryptoKittyID: cryptoKitty,
-			Pronoun:       randomPronoun,
 			Hunger:        100,
 		}),
 	})
 
 	return nil
-}
-
-func getRandomPronoun() string {
-	return pronouns[rand.Intn(len(pronouns))]
 }
 
 func getRandomCryptoKittyId() int {

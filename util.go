@@ -34,10 +34,6 @@ func createCatProfileEmbed(cat *models.Cat) *discordgo.MessageEmbed {
 		},
 		Fields: []*discordgo.MessageEmbedField{
 			{
-				Name:  "Pronoun",
-				Value: cat.Pronoun,
-			},
-			{
 				Name:  "Status",
 				Value: catStatus,
 			},

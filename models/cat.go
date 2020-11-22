@@ -1,6 +1,7 @@
 package models
 
 import (
+	"database/sql"
 	"time"
 )
 
@@ -9,7 +10,6 @@ type Cat struct {
 	OwnerId       uint      `db:"owner_id"`
 	Name          string    `db:"name"`
 	CryptoKittyID int       `db:"ck_id"`
-	Pronoun       string    `db:"pronoun"`
 	Hunger        int       `db:"hunger"`
 	LastFed       time.Time `db:"last_fed"`
 	Away          bool      `db:"away"`
@@ -62,6 +62,10 @@ func (cs *CatStore) GetByName(db Queryable, owner *User, name string) (*Cat, err
 		name,
 	)
 
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -69,15 +73,14 @@ func (cs *CatStore) GetByName(db Queryable, owner *User, name string) (*Cat, err
 	return &cat, nil
 }
 
-func (cs *CatStore) CreateForUser(db Queryable, owner *User, cryptoKittyId int, name string, pronoun string) error {
+func (cs *CatStore) CreateForUser(db Queryable, owner *User, cryptoKittyId int, name string) error {
 	_, err := db.NamedExec(
-		`insert into cats (owner_id, ck_id, name, pronoun)
-			   values (:owner_id, :ck_id, :name, :pronoun)`,
+		`insert into cats (owner_id, ck_id, name)
+			   values (:owner_id, :ck_id, :name)`,
 		map[string]interface{}{
 			"owner_id": owner.ID,
 			"ck_id":    cryptoKittyId,
 			"name":     name,
-			"pronoun":  pronoun,
 		})
 
 	if err != nil {
