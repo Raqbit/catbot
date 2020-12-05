@@ -1,17 +1,22 @@
-version: '3.1'
+version: '3.7'
 
 services:
   db:
     container_name: catbotdb
     image: postgres:alpine
+    user: "1000:1000"
     restart: always
     ports:
       - 5432:5432
+    volumes:
+      - "./db/init:/docker-entrypoint-initdb.d"
+      - "./db/data:/var/lib/postgresql/data"
+      - "/etc/passwd:/etc/passwd:ro"
     environment:
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: catbot
+      POSTGRES_USER: catbot
+      POSTGRES_PASSWORD: catbot
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: [ "CMD-SHELL", "pg_isready -U catbot" ]
       interval: 10s
       timeout: 5s
       retries: 5

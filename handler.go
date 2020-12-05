@@ -1,41 +1,27 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/Raqbit/catbot/models"
 	"github.com/bwmarrin/discordgo"
 	"github.com/sirupsen/logrus"
+	"github.com/volatiletech/sqlboiler/v4/boil"
 	"strings"
 )
 
 type CmdContext struct {
 	Bot   *BotContext
 	User  *models.User
-	Store models.Queryable
+	Store boil.ContextExecutor
 }
 
 func RegisterCommands() map[string]*Command {
 	cmds := make(map[string]*Command)
 
 	addCommand(cmds, &Command{
-		Name:        "Buy",
-		Description: "Buy cats",
-		Aliases:     []string{"buy"},
-		Admin:       false,
-		Exec:        Buy,
-	})
-
-	addCommand(cmds, &Command{
-		Name:        "Out",
-		Description: "Let out a cat out on an adventure",
-		Aliases:     []string{"out"},
-		Admin:       false,
-		Exec:        Out,
-	})
-
-	addCommand(cmds, &Command{
 		Name:        "Feed",
-		Description: "Feed a cat",
+		Description: "Feed your cat",
 		Aliases:     []string{"feed"},
 		Admin:       false,
 		Exec:        Feed,
@@ -55,14 +41,6 @@ func RegisterCommands() map[string]*Command {
 		Aliases:     []string{"daily"},
 		Admin:       false,
 		Exec:        Daily,
-	})
-
-	addCommand(cmds, &Command{
-		Name:        "Info",
-		Description: "Get info about one of your cats",
-		Aliases:     []string{"info", "catinfo"},
-		Admin:       false,
-		Exec:        Info,
 	})
 
 	return cmds
@@ -133,16 +111,20 @@ func handleMessage(s *discordgo.Session, m *discordgo.MessageCreate, appContext 
 		return nil
 	}
 
-	user, err := models.Users.GetOrCreate(appContext.Datastore, m.Author.ID)
-
-	if err != nil {
-		return fmt.Errorf("could not get or create user: %w", err)
-	}
-
-	tx, err := appContext.Datastore.BeginTransaction()
+	tx, err := appContext.Datastore.Beginx()
 
 	if err != nil {
 		return fmt.Errorf("could not create transaction: %w", err)
+	}
+
+	user := &models.User{}
+
+	user.DiscordID = m.Author.ID
+
+	err = user.Upsert(context.Background(), tx, false, nil, boil.None(), boil.Infer())
+
+	if err != nil {
+		return fmt.Errorf("could not get or create user: %w", err)
 	}
 
 	ctx := &CmdContext{Bot: appContext, User: user, Store: tx}

@@ -1,8 +1,11 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"github.com/Raqbit/catbot/models"
 	"github.com/bwmarrin/discordgo"
+	"github.com/volatiletech/sqlboiler/v4/boil"
 	"math"
 	"time"
 )
@@ -21,21 +24,31 @@ func Daily(s *discordgo.Session, m *discordgo.MessageCreate, _ []string, ctx *Cm
 		return nil
 	}
 
+	ctx.User.LastDaily = time.Now()
 	// TODO: Add randomness?
-	newAmount, err := ctx.User.UseDaily(ctx.Store, ctx.Bot.Config.CatCost)
+	ctx.User.Money -= ctx.Bot.Config.CatCost
+
+	_, err := ctx.User.Update(
+		context.Background(),
+		ctx.Store,
+		boil.Whitelist(
+			models.UserColumns.LastDaily,
+			models.UserColumns.Money,
+		),
+	)
 
 	if err != nil {
 		return fmt.Errorf("failed using user's daily: %w", err)
 	}
 
 	dailyTitle := fmt.Sprintf(
-		"%s opens their daily...",
+		"%s opens their daily reward...",
 		m.Author.Username)
 
 	dailyDesc := fmt.Sprintf(
 		"**+%d credits** (you now have %d)",
 		ctx.Bot.Config.CatCost,
-		newAmount,
+		ctx.User.Money,
 	)
 
 	dailyFooter := fmt.Sprintf("Use %sbuy to buy a cat.",

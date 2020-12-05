@@ -1,41 +1,35 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/Raqbit/catbot/models"
 	"github.com/bwmarrin/discordgo"
+	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
 func Profile(s *discordgo.Session, m *discordgo.MessageCreate,
-	_ []string, context *CmdContext) error {
+	_ []string, ctx *CmdContext) error {
 
-	cats, err := models.Cats.GetAllCatsOfUser(context.Store, context.User)
+	cat, err := models.Cats(
+		models.CatWhere.OwnerID.EQ(ctx.User.ID),
+		qm.Load(models.CatRels.Type),
+		qm.Load(models.CatRels.CurrentActivity),
+	).One(context.Background(), ctx.Store)
 
 	if err != nil {
-		return fmt.Errorf("could not get cats from db: %w", err)
+		return fmt.Errorf("could not get cat from db: %w", err)
 	}
 
-	catsValue := ""
-
-	if len(cats) != 0 {
-		for _, cat := range cats {
-			status := "Home"
-			if cat.Away {
-				status = "Away"
-			}
-			catsValue = catsValue + fmt.Sprintf("%s - **%s**\n", cat.Name, status)
-		}
-	} else {
-		catsValue = fmt.Sprintf("**None** :(\nBuy a cat with **%sbuy**.", context.Bot.Config.CommandPrefix)
-	}
+	catsValue := fmt.Sprintf("%s is %s\n", cat.R.Type.Name, cat.R.CurrentActivity.Description)
 
 	profileDesc := ""
-	if context.User.Money > 0 {
-		profileDesc = fmt.Sprintf("💰 %d credits", context.User.Money)
+	if ctx.User.Money > 0 {
+		profileDesc = fmt.Sprintf("💰 %d credits", ctx.User.Money)
 	} else {
 		profileDesc = fmt.Sprintf(
 			"You don't have any money.\nUse **%sdaily** to get your daily reward.",
-			context.Bot.Config.CommandPrefix,
+			ctx.Bot.Config.CommandPrefix,
 		)
 	}
 
@@ -50,8 +44,8 @@ func Profile(s *discordgo.Session, m *discordgo.MessageCreate,
 		},
 		Footer: &discordgo.MessageEmbedFooter{
 			Text: fmt.Sprintf("Buy cats with %sbuy, let cats out with %sout.",
-				context.Bot.Config.CommandPrefix,
-				context.Bot.Config.CommandPrefix,
+				ctx.Bot.Config.CommandPrefix,
+				ctx.Bot.Config.CommandPrefix,
 			),
 		},
 	}

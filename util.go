@@ -21,21 +21,15 @@ func isValidCatName(name string) bool {
 }
 
 func createCatProfileEmbed(cat *models.Cat) *discordgo.MessageEmbed {
-	catStatus := "Home"
-
-	if cat.Away {
-		catStatus = "Away"
-	}
-
 	return &discordgo.MessageEmbed{
-		Title: cat.Name,
+		Title: fmt.Sprintf("Your %s", cat.R.Type.Name),
 		Thumbnail: &discordgo.MessageEmbedThumbnail{
-			URL: fmt.Sprintf("%s/%d.png", ckBaseUrl, cat.CryptoKittyID),
+			URL: cat.R.Type.AvatarURL,
 		},
 		Fields: []*discordgo.MessageEmbedField{
 			{
 				Name:  "Status",
-				Value: catStatus,
+				Value: cat.R.CurrentActivity.Description,
 			},
 		},
 	}

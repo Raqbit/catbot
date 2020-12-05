@@ -1,0 +1,11 @@
+output = "models"
+wipe = true
+add_soft_deletes = true
+
+[psql]
+dbname = "catbot"
+host = "localhost"
+user = "catbot"
+pass = "catbot"
+sslmode = "disable"
+blacklist = ["schema_migrations"]

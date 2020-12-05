@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/Raqbit/catbot/models"
 	"github.com/bwmarrin/discordgo"
+	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 	"math/rand"
@@ -14,7 +14,7 @@ import (
 )
 
 type BotContext struct {
-	Datastore models.Datastore
+	Datastore *sqlx.DB
 	Config    *Config
 	Commands  map[string]*Command
 }
@@ -47,10 +47,6 @@ func main() {
 	cmds := RegisterCommands()
 
 	botCtx := &BotContext{Config: cfg, Commands: cmds, Datastore: db}
-
-	// Setup cat return cron
-	catReturnTicker := setupCatReturnCron(discord, botCtx)
-	defer catReturnTicker.Stop()
 
 	discord.AddHandler(messageCreate(botCtx))
 
