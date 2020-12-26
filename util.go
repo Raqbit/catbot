@@ -2,38 +2,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/Raqbit/catbot/models"
 	"github.com/bwmarrin/discordgo"
-	"strings"
 )
 
 const bannedChars = "#<>@*~_`\\/-,!|"
-
-func isValidCatName(name string) bool {
-	if len(name) > 20 {
-		return false
-	}
-	if strings.ContainsAny(name, bannedChars) {
-		return false
-	}
-
-	return true
-}
-
-func createCatProfileEmbed(cat *models.Cat) *discordgo.MessageEmbed {
-	return &discordgo.MessageEmbed{
-		Title: fmt.Sprintf("Your %s", cat.R.Type.Name),
-		Thumbnail: &discordgo.MessageEmbedThumbnail{
-			URL: cat.R.Type.AvatarURL,
-		},
-		Fields: []*discordgo.MessageEmbedField{
-			{
-				Name:  "Status",
-				Value: cat.R.CurrentActivity.Description,
-			},
-		},
-	}
-}
 
 func comesFromDM(s *discordgo.Session, m *discordgo.MessageCreate) (bool, error) {
 	channel, err := s.State.Channel(m.ChannelID)

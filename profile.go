@@ -1,56 +1,39 @@
 package main
 
 import (
-	"context"
 	"fmt"
-	"github.com/Raqbit/catbot/models"
 	"github.com/bwmarrin/discordgo"
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
 func Profile(s *discordgo.Session, m *discordgo.MessageCreate,
 	_ []string, ctx *CmdContext) error {
 
-	cat, err := models.Cats(
-		models.CatWhere.OwnerID.EQ(ctx.User.ID),
-		qm.Load(models.CatRels.Type),
-		qm.Load(models.CatRels.CurrentActivity),
-	).One(context.Background(), ctx.Store)
-
-	if err != nil {
-		return fmt.Errorf("could not get cat from db: %w", err)
+	if ctx.Cat == nil {
+		_, _ = ChannelMesageSendError(s, m.ChannelID, fmt.Sprintf("You don't seem to have a cat yet! Get one with **%sstart**!", ctx.Bot.Config.CommandPrefix))
+		return nil
 	}
 
-	catsValue := fmt.Sprintf("%s is %s\n", cat.R.Type.Name, cat.R.CurrentActivity.Description)
+	catsValue := fmt.Sprintf("%s is %s\n", ctx.Cat.R.Type.Name, ctx.Cat.R.CurrentActivity.Description)
 
-	profileDesc := ""
+	moneyDesc := fmt.Sprintf(
+		"You don't have any money.\nUse **%sdaily** to get your daily reward.",
+		ctx.Bot.Config.CommandPrefix,
+	)
+
 	if ctx.User.Money > 0 {
-		profileDesc = fmt.Sprintf("💰 %d credits", ctx.User.Money)
-	} else {
-		profileDesc = fmt.Sprintf(
-			"You don't have any money.\nUse **%sdaily** to get your daily reward.",
-			ctx.Bot.Config.CommandPrefix,
-		)
+		moneyDesc = fmt.Sprintf("You have %d 💰", ctx.User.Money)
 	}
 
-	embed := &discordgo.MessageEmbed{
-		Title:       m.Author.Username + "'s Profile",
-		Description: profileDesc,
-		Fields: []*discordgo.MessageEmbedField{
-			{
-				Name:  "Cats",
-				Value: catsValue,
-			},
+	_, _ = s.ChannelMessageSendEmbed(m.ChannelID, &discordgo.MessageEmbed{
+		Title:       m.Author.Username + "'s Cat",
+		Description: catsValue,
+		Image: &discordgo.MessageEmbedImage{
+			URL: ctx.Cat.R.Type.AvatarURL,
 		},
 		Footer: &discordgo.MessageEmbedFooter{
-			Text: fmt.Sprintf("Buy cats with %sbuy, let cats out with %sout.",
-				ctx.Bot.Config.CommandPrefix,
-				ctx.Bot.Config.CommandPrefix,
-			),
+			Text: moneyDesc,
 		},
-	}
-
-	_, _ = s.ChannelMessageSendEmbed(m.ChannelID, embed)
+	})
 
 	return nil
 }

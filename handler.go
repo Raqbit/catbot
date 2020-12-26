@@ -2,17 +2,20 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"github.com/Raqbit/catbot/models"
 	"github.com/bwmarrin/discordgo"
 	"github.com/sirupsen/logrus"
 	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 	"strings"
 )
 
 type CmdContext struct {
 	Bot   *BotContext
 	User  *models.User
+	Cat   *models.Cat
 	Store boil.ContextExecutor
 }
 
@@ -127,7 +130,16 @@ func handleMessage(s *discordgo.Session, m *discordgo.MessageCreate, appContext 
 		return fmt.Errorf("could not get or create user: %w", err)
 	}
 
-	ctx := &CmdContext{Bot: appContext, User: user, Store: tx}
+	cat, err := user.OwnerCat(
+		qm.Load(models.CatRels.Type),
+		qm.Load(models.CatRels.CurrentActivity),
+	).One(context.Background(), tx)
+
+	if err != nil && err != sql.ErrNoRows {
+		return fmt.Errorf("could not get cat: %w", err)
+	}
+
+	ctx := &CmdContext{Bot: appContext, User: user, Cat: cat, Store: tx}
 
 	// Execute commands
 	err = cmd.Exec(s, m, commandParts, ctx)
